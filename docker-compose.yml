@@ -67,7 +67,7 @@ services:
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:9092 --list
       "
-    restart: unless-stopped
+  
 
   #### Service Postgres Database
   postgres:
@@ -107,6 +107,7 @@ services:
       - kafka
     networks:
       - kafka-net
+    restart: unless-stopped
 
   producer_1:
     build:
@@ -119,6 +120,7 @@ services:
       - kafka
     networks:
       - kafka-net
+    restart: unless-stopped
 
   producer_2:
     build:
@@ -131,9 +133,22 @@ services:
       - kafka
     networks:
       - kafka-net
+    restart: unless-stopped
+
+  fast_api:
+    build:
+      context: ./FastApi
+      dockerfile: Dockerfile
+    container_name: fastapi
+    depends_on:
+      - postgres
+      - postgis
+    ports:
+      - "4000:8000"
+    networks:
+      - kafka-net
 
   # front:
-  # fast_api:
 
 volumes:
   zookeeper_data:
