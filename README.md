@@ -5,7 +5,7 @@ Une armade de microservices pour un tracking GPS nouvelle génération.
 - copier .env.example et le nommer .env
 - modifier les variables d'environnement dans le fichier .env
 
-## Vous lancer tout
+## Vous lancez tout
 docker-compose up -d
 
 ## quelques tests
