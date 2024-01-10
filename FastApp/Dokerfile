@@ -1,0 +1,21 @@
+# Utilisez une image de base, Python 3.9
+FROM python:3.9
+
+# Le répertoire de travail dans le conteneur
+WORKDIR /app
+
+# Copiez le fichier requirements.txt dans le conteneur à /app/
+COPY requirements.txt /app/
+
+# Installer les dépendances
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copier le reste des fichiers dans le conteneur
+COPY . /app/
+
+# Exposer le port sur lequel FastAPI écoute
+EXPOSE 8000
+
+# Commande pour lancer l'application lorsqu'un conteneur est démarré
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
