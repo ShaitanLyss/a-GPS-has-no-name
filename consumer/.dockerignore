@@ -1,0 +1,18 @@
+# Exclude common files and directories
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+.idea/
+venv/
+
+# Exclude development and test files
+tests
+
+# Exclude version control files
+.git
+.gitignore
+
+# Exclude any other unnecessary files or directories
