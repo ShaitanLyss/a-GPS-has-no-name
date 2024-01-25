@@ -174,12 +174,16 @@ async def create_location(location: LocationCreate):
     db.close()
     return db_location
 
-@app.get("/")
-async def create_location():
-    db = SessionLocal()
+@app.get("/location/", response_model=List[LocationCreate])
+async def create_location(db: Session = Depends(get_db)):
     location = db.query(Location).all()
-    db.close()
+
     return location
+
+@app.get("/", response_model=LocationCreate)
+async def create_location(location: LocationCreate = None):
+   
+    return {"message": "Location"}
 
 
 @app.get("/c/{lib}", response_model=LocationCreate)
