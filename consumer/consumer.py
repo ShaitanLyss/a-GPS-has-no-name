@@ -54,7 +54,7 @@ class KafkaCoordinatesConsumer:
 
                     mes_points = self.connection_db.get_all_locations()
 
-                    print(f"les points : \n {mes_points}")
+                    #print(f"les points : \n {mes_points}")
 
         except KeyboardInterrupt:
             pass

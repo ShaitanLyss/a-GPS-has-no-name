@@ -63,7 +63,7 @@ async def create_location(location: LocationCreate):
     return db_location
 
 
-@app.get("/location/{lib}", response_model=LocationCreate)
+@app.get("/c/{lib}", response_model=LocationCreate)
 async def read_location(lib: str):
     db = SessionLocal()
     location = db.query(Location).filter(Location.libelle == lib).first()
