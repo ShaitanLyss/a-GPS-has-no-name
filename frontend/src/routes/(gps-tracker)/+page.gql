@@ -1,0 +1,10 @@
+query TrackedObjects {
+    trackedObjects @loading{
+        ip 
+        location{
+            lat 
+            lng
+        }
+    }
+}   
+

@@ -1,0 +1,18 @@
+type Location {
+  lat: Float!
+  lng: Float!
+}
+
+type Query {
+  trackedObjects: [TrackedObject!]!
+}
+
+type Subscription {
+  count(target: Int! = 100): Int!
+  objectsUpdated: [TrackedObject!]!
+}
+
+type TrackedObject {
+  ip: String!
+  location: Location!
+}
