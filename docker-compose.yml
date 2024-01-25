@@ -82,7 +82,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB_NAME}
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   postgis:
     image: postgis/postgis:latest
@@ -95,7 +95,7 @@ services:
       - postgres
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   consumer:
     build:
@@ -108,7 +108,7 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   producer_1:
     build:
@@ -121,7 +121,7 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   producer_2:
     build:
@@ -134,9 +134,9 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
-  fast_api:
+  fastapi:
     build:
       context: ./FastApi
       dockerfile: Dockerfile
@@ -148,8 +148,19 @@ services:
       - "4000:8000"
     networks:
       - kafka-net
-    restart: unless-stopped
-  # front:
+    restart: on-failure
+  front:
+     build:
+      context: ./frontend
+      dockerfile: Dockerfile
+     container_name: front
+     depends_on:
+      - fastapi
+     ports:
+      - "5173:5173"
+     networks:
+      - kafka-net
+     restart: on-failure
 
 volumes:
   zookeeper_data:
