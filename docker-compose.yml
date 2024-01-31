@@ -49,7 +49,7 @@ services:
 
   ## Init-container to create the topic coordinates
   init-kafka:
-    image: confluentinc/cp-kafka:6.1.1
+    image: docker.io/confluentinc/cp-kafka:6.1.1
     container_name: init-kafka
     working_dir: /opt/bitnami/kafka/bin
     networks:
@@ -84,7 +84,7 @@ services:
     restart: unless-stopped
 
   postgis:
-    image: postgis/postgis:latest
+    image: docker.io/postgis/postgis:latest
     container_name: postgis
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
