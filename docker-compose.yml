@@ -35,6 +35,7 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_MESSAGE_MAX_BYTES=10000000
     healthcheck:
       test:
         ["CMD", "kafka-topics.sh", "--bootstrap-server=kafka:9092", "--list"]
@@ -81,7 +82,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB_NAME}
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   postgis:
     image: docker.io/postgis/postgis:latest
@@ -94,7 +95,7 @@ services:
       - postgres
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   consumer:
     build:
@@ -107,7 +108,7 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   producer_1:
     build:
@@ -120,7 +121,7 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
   producer_2:
     build:
@@ -133,9 +134,9 @@ services:
       - kafka
     networks:
       - kafka-net
-    restart: unless-stopped
+    restart: on-failure
 
-  fast_api:
+  fastapi:
     build:
       context: ./FastApi
       dockerfile: Dockerfile
@@ -147,8 +148,19 @@ services:
       - "4000:8000"
     networks:
       - kafka-net
-
-  # front:
+    restart: on-failure
+  front:
+     build:
+      context: ./frontend
+      dockerfile: Dockerfile
+     container_name: front
+     depends_on:
+      - fastapi
+     ports:
+      - "5173:5173"
+     networks:
+      - kafka-net
+     restart: on-failure
 
 volumes:
   zookeeper_data:

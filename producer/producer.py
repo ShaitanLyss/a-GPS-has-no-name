@@ -76,7 +76,7 @@ if __name__ == "__main__":
             data = kafka_producer.generate_coordinates(current_lat, current_long)
 
             # Print or do something with the data
-            print(data)
+            #print(data)
             kafka_producer.producer.produce(kafka_producer.topic, key='some_key', value=(json.dumps(data).encode('ascii')),
                                             callback=kafka_producer.delivery_report)
             # Wait for any outstanding messages to be delivered
