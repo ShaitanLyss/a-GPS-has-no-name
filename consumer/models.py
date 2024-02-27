@@ -1,7 +1,8 @@
+from typing import TypedDict
 from pydantic import BaseModel
 
 
-class Coordinates(BaseModel):
+class Coordinates(TypedDict):
     lat: float
     long: float
 
@@ -12,4 +13,4 @@ class KafkaProducerInfo:
         self.name = name
         self.local_ip_address = local_ip_address
         self.public_ip_address = public_ip_address
-        self.coordinates = coordinates
+        self.coordinates: Coordinates = coordinates

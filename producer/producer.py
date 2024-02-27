@@ -2,12 +2,18 @@ import json
 import os
 import random
 import time
+from typing import Optional
+from pydantic import BaseModel
 
 import requests
 from confluent_kafka import Producer
 from dotenv import load_dotenv
 import socket
 from models import KafkaProducerInfo
+
+class Location(BaseModel):
+    lat: float
+    lng: float
 
 
 class KafkaCoordinatesProducer:
@@ -60,19 +66,50 @@ class KafkaCoordinatesProducer:
             'name': hostname,
             'local_ip_address': kafka_producer.get_machine_ip(),  # Replace with actual method
             'public_ip_address': kafka_producer.get_public_ip(),  # Replace with actual method
-            'coordinates': {'lat': random.uniform(-90, 90), 'long': random.uniform(-180, 180)}
+            'coordinates': {'lat': lat, 'long': long}
         }
         return generated_data
 
+def random_number(a: float, b: Optional[float] = None):
+    if b is None:
+        b = a
+        a = -a
+    return a + random.random() * (b - a)
 
-if __name__ == "__main__":
-    kafka_producer = KafkaCoordinatesProducer()
-    current_lat, current_long = random.uniform(-90, 90), random.uniform(-180, 180)
+def random_location():
+    return Location(lat=random_number(90), lng=random_number(180))
+
+
+kafka_producer = KafkaCoordinatesProducer()
+def main():
+    loc_0 = random_location()
+    current_lat, current_long = loc_0.lat, loc_0.lng
+    machine_ip = kafka_producer.get_machine_ip()
+    assert machine_ip is not None
+    i = int(machine_ip.split('.')[-1])
     try:
+        dt = 1e-3
         while True:
             # Generate the data
-            current_lat += random.uniform(-0.001, 0.001)
-            current_long += random.uniform(-0.001, 0.001)
+            T_lng = 5 if i % 2 else 1
+            w_lng = 360 / T_lng
+            T_lat = 1
+            w_lat = 180 / T_lat
+
+            lat = current_lat
+            lng = current_long
+
+            lat += 90
+            lng += 180
+
+            lat = (lat + w_lat * dt) % 180
+            lng = (lng + (-1) ** i * w_lng * dt) % 360
+
+            lat -= 90
+            lng -= 180
+
+            current_lat = lat
+            current_long = lng
             data = kafka_producer.generate_coordinates(current_lat, current_long)
 
             # Print or do something with the data
@@ -82,7 +119,7 @@ if __name__ == "__main__":
             # Wait for any outstanding messages to be delivered
             kafka_producer.producer.flush()
             # Sleep for one second
-            time.sleep(1)
+            time.sleep(dt)
 
     except KeyboardInterrupt:
         # Handle Ctrl+C to exit the loop gracefully
@@ -90,3 +127,6 @@ if __name__ == "__main__":
 
     # data_to_sent = KafkaProducerInfo(1, 'producer1', kafka_producer.get_machine_ip(), kafka_producer.get_public_ip(), data['coordinates'])
 
+
+if __name__ == "__main__":
+    main()

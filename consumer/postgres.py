@@ -4,6 +4,7 @@ import psycopg2
 from shapely.geometry import Point
 from dotenv import load_dotenv
 from models import KafkaProducerInfo
+from datetime import datetime
 
 
 class PG_Connexion:
@@ -31,8 +32,13 @@ class PG_Connexion:
                 libelle VARCHAR(255),
                 loc_ip_address VARCHAR(255),
                 pub_ip_address VARCHAR(255),
-                geom GEOMETRY(Point, 4326)
+                geom GEOMETRY(Point, 4326),
+                at TIMESTAMP
             );
+        """
+        create_at_index = """
+            CREATE INDEX IF NOT EXISTS idx_at
+          ON locations (at);
         """
         cursor.execute(create_table_query)
         self.conn.commit()
@@ -44,10 +50,10 @@ class PG_Connexion:
         cursor = self.conn.cursor()
         # Insert a point into the table
         point = Point(data.coordinates['lat'], data.coordinates['long'])
-        insert_point_query = "INSERT INTO locations (libelle, loc_ip_address, pub_ip_address, geom) VALUES (%s, %s, %s, " \
-                             "ST_GeomFromText(%s, 4326));"
-        cursor.execute(insert_point_query, (data.name, data.local_ip_address, data.public_ip_address, point.wkt))
-
+        insert_point_query = "INSERT INTO locations (libelle, loc_ip_address, pub_ip_address, geom, at) VALUES (%s, %s, %s, " \
+                             "ST_GeomFromText(%s, 4326), %s);"
+        cursor.execute(insert_point_query, (data.name, data.local_ip_address, data.public_ip_address, point.wkt, datetime.utcnow()))
+        
         # Commit the transaction
         self.conn.commit()
 

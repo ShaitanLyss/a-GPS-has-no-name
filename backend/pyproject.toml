@@ -7,14 +7,19 @@ authors = ["MoonLyss <shaitan.lyssm@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.12.0"
-strawberry-graphql = {extras = ["fastapi"], version = "^0.216.1"}
+strawberry-graphql = {extras = ["fastapi"], version = "^0.219.2"}
 fastapi = "^0.105.0"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 psycopg2-binary = "^2.9.9"
 sqlalchemy = "^2.0.27"
 geoalchemy2 = "^0.14.4"
 shapely = "^2.0.3"
+sqlmodel = "^0.0.16"
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.2.2"
+black = "^24.2.0"
 
 [build-system]
 requires = ["poetry-core"]

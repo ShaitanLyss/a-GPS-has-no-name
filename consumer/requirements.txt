@@ -1,11 +1,11 @@
 # requirements.txt
-confluent_kafka==1.7.0
-python-dotenv~=1.0.0
-python-snappy==0.6.0
-asyncio==3.4.3
-websockets~=12.0
-psycopg2-binary==2.9.3
-requests==2.26.0
-pydantic~=2.5.2
-shapely~=2.0.2
-SQLAlchemy==1.4.26
+psycopg2-binary
+confluent_kafka
+python-dotenv
+python-snappy
+asyncio
+websockets
+requests
+pydantic
+shapely
+SQLAlchemy

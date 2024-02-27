@@ -1,9 +1,9 @@
 import json
 
-from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Consumer, KafkaError, error
 from dotenv import load_dotenv
 import os
-from postres import PG_Connexion
+from postgres import PG_Connexion
 from models import KafkaProducerInfo
 import asyncio
 import websockets
@@ -34,11 +34,11 @@ class KafkaCoordinatesConsumer:
                 if msg is None:
                     continue
                 if msg.error():
-                    if msg.error().code() == KafkaError.PARTITION_EOF:
+                    # if msg.error().code():
                         # End of partition event
-                        print(f"Reached end of partition {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
-                    else:
-                        print(f"Error: {msg.error()}")
+                        # print(f"Reached end of partition {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
+                    # else:
+                    print(f"Error: {msg.error()}")
                 else:
                     # Print the received message value
                     data = json.loads(msg.value().decode('ascii'))

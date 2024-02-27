@@ -6,8 +6,9 @@ services:
     ports:
       - 9092:9092
       - 9094:9094
-    volumes:
-      - kafka_data:/bitnami
+    # volumes:
+    #   - kafka_data:/bitnami
+    restart: on-failure
     environment:
       - KAFKA_CFG_MODE=raft
       - KAFKA_CFG_NODE_ID=0
@@ -57,11 +58,12 @@ services:
 
   consumer:
     build: consumer
+    image: noname-gps-consumer
     ports:
       - "8081:80"
     depends_on:
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
       postgis:
         condition: service_healthy
     environment:
@@ -69,28 +71,30 @@ services:
       - TOPIC=coordinates
       - PG_USER=${POSTGRES_USER}
       - PG_PASSWORD=${POSTGRES_PASSWORD}
-      - PG_DATABASE=noname-gps
+      - PG_DATABASE=${POSTGRES_DB_NAME}
       - PG_HOST=postgis
       - KAFKA_CONSUMER_GROUP=coordinates-consumer
 
   producer_1:
     build: producer
+    image: noname-gps-producer
     ports:
       - "8082:80"
     depends_on:
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
     environment:
       - KAFKA_BROKER_ADDRESS=kafka:9092
       - TOPIC=coordinates
 
   producer_2:
     build: producer
+    image: noname-gps-producer
     ports:
       - "8083:80"
     depends_on:
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
     restart: on-failure
     environment:
       - KAFKA_BROKER_ADDRESS=kafka:9092
@@ -98,6 +102,7 @@ services:
 
   backend:
     build: backend
+    image: noname-gps-backend
     depends_on:
       postgis:
         condition: service_healthy
@@ -106,10 +111,11 @@ services:
     environment:
       - PG_USER=${POSTGRES_USER}
       - PG_PASSWORD=${POSTGRES_PASSWORD}
-      - PG_DATABASE=noname-gps
+      - PG_DATABASE=${POSTGRES_DB_NAME}
       - PG_HOST=postgis
   front:
      build: frontend
+     image: noname-gps-frontend
      depends_on:
       - backend
      ports:
@@ -118,5 +124,5 @@ services:
       - PUBLIC_BACKEND_ADDRESS=http://localhost:8000
 
 
-volumes:
-  kafka_data:
+# volumes:
+  # kafka_data:
