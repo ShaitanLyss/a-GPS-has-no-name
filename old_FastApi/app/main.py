@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import Annotated, List
 import asyncio
 from math import sin
 import math
@@ -21,8 +21,15 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
-DATABASE_URL = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASSWORD') + "@" + os.getenv(
-    'PG_HOST') + "/" + os.getenv('PG_DATABASE')
+user = os.getenv('PG_USER')
+password = os.getenv('PG_PASSWORD')
+host = os.getenv('PG_HOST')
+db = os.getenv('PG_DATABASE')
+assert user is not None
+assert password is not None
+assert host is not None
+assert db is not None
+DATABASE_URL = "postgresql://" + user + ":" + password + "@" + host + "/" + db
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -49,21 +56,6 @@ class LocationCreate(BaseModel):
     long: float
 
 
-
-
-
-@strawberry.type
-class Location:
-    lat: float
-    lng: float
-
-
-@strawberry.type
-class TrackedObject:
-    ip: str
-    location: Location
-
-
 def random_number(a: float, b = None):
     if b is None:
         b = a
@@ -75,61 +67,7 @@ def random_location():
     return Location(lat=random_number(90), lng=random_number(180))
 
 
-tracked_objects = [
-    TrackedObject(ip="ye", location=random_location()),
-    TrackedObject(ip="ye2", location=random_location()),
-]
 
-
-@strawberry.type
-class Query:
-    @strawberry.field
-    def trackedObjects(self) -> list[TrackedObject]:
-        return tracked_objects
-
-
-@strawberry.type
-class Subscription:
-    @strawberry.subscription
-    async def count(self, target: int = 100) -> AsyncGenerator[int, None]:
-        for i in range(target):
-            yield i
-            await asyncio.sleep(0.001)
-
-
-    @strawberry.subscription
-    async def objectsUpdated(self) -> AsyncGenerator[List[TrackedObject], None]:
-        dt = 1e-3
-        while True:
-            yield tracked_objects
-            await asyncio.sleep(dt)
-            for i in range(len(tracked_objects)):
-                T_lng = 5 if i % 2 else 1
-                w_lng = 360 / T_lng
-                T_lat = 1
-                w_lat = 180 / T_lat
-
-                lat = tracked_objects[i].location.lat
-                lng = tracked_objects[i].location.lng
-
-                lat += 90
-                lng += 180
-
-                lat = ( lat + w_lat * dt) % 180
-                lng = (lng + (-1)**i * w_lng * dt) % 360
-
-                lat -= 90
-                lng -= 180
-
-                tracked_objects[i].location.lat = lat
-                tracked_objects[i].location.lng = lng
-
-
-
-
-schema = strawberry.Schema(query=Query, subscription=Subscription)
-
-graphql_app = GraphQLRouter(schema)
 
 app = FastAPI()
 
@@ -175,15 +113,14 @@ async def create_location(location: LocationCreate):
     return db_location
 
 @app.get("/location/", response_model=List[LocationCreate])
-async def create_location(db: Session = Depends(get_db)):
+async def get_locations(db: Annotated[Session, Depends(get_db)]):
     location = db.query(Location).all()
 
     return location
 
-@app.get("/", response_model=LocationCreate)
-async def create_location(location: LocationCreate = None):
-   
-    return {"message": "Location"}
+@app.get("/")
+async def helloWorld():
+    return "Hello World!"
 
 
 @app.get("/c/{lib}", response_model=LocationCreate)
@@ -202,10 +139,10 @@ async def read_location(lib: str):
 
 @app.get("/location/tout/{lib}", response_model=List[LocationCreate])
 async def read_locations(
+    db: Annotated[Session, Depends(get_db)],
     lib: str,
     skip: int = 0,
-    limit: int = 10,
-    db: Session = Depends(get_db),
+    limit: int = 10
 ):
     locations = (
         db.query(Location)
