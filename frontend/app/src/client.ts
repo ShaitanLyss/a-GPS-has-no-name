@@ -1,11 +1,20 @@
+import { browser, dev } from '$app/environment';
 import { HoudiniClient, subscription } from '$houdini';
 import { createClient } from 'graphql-ws';
+// import { env as privateEnv} from '$env/dynamic/private';
+import { env } from '$env/dynamic/public';
+
+const public_addr = env.PUBLIC_BACKEND_ADDRESS + '/graphql';
+let private_addr = '';
+if (!browser) {
+    private_addr =dev ? public_addr : public_addr.replace('localhost', 'backend');
+}
 
 export default new HoudiniClient({
-    url: 'http://localhost:4000/',
+    url: browser ? public_addr : private_addr,
     plugins: [
         subscription(() => createClient({
-            url: 'ws://localhost:4000/'
+            url: public_addr.replace('http', 'ws'),
         }))
     ]
 

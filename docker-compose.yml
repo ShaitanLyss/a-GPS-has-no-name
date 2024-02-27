@@ -1,33 +1,15 @@
 version: "3"
 
 services:
-  ## service zookeeper
-  zookeeper:
-    image: docker.io/bitnami/zookeeper:3.9
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    volumes:
-      - "zookeeper_data:/bitnami"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    networks:
-      - kafka-net
-    restart: unless-stopped
-
-  ## service kafka
   kafka:
-    image: docker.io/bitnami/kafka:3.4
-    container_name: kafka
+    image: docker.io/bitnami/kafka:3.6
     ports:
-      - "9092:9092"
-      - "9094:9094"
+      - 9092:9092
+      - 9094:9094
     volumes:
-      - "kafka_data:/bitnami"
+      - kafka_data:/bitnami
     environment:
       - KAFKA_CFG_MODE=raft
-      - KAFKA_CFG_ZOOKEEPER_METADATA_MIGRATION_ENABLE=true
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
@@ -35,29 +17,21 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_MESSAGE_MAX_BYTES=10000000
     healthcheck:
       test:
         ["CMD", "kafka-topics.sh", "--bootstrap-server=kafka:9092", "--list"]
       interval: 10s
       timeout: 5s
       retries: 3
-    networks:
-      - kafka-net
-    depends_on:
-      - zookeeper
-    restart: unless-stopped
 
   ## Init-container to create the topic coordinates
   init-kafka:
     image: docker.io/confluentinc/cp-kafka:6.1.1
-    container_name: init-kafka
     working_dir: /opt/bitnami/kafka/bin
-    networks:
-      - kafka-net
     entrypoint: ["/bin/sh", "-c"]
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     command: |
       "
       # blocks until kafka is reachable
@@ -69,95 +43,80 @@ services:
       kafka-topics --bootstrap-server kafka:9092 --list
       "
   
-
-  #### Service Postgres Database
-
   postgis:
     image: docker.io/postgis/postgis:latest
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB_NAME}
-    networks:
-      - kafka-net
-    restart: on-failure
 
   consumer:
-    build:
-      context: ./consumer
-      dockerfile: Dockerfile
-    container_name: consumer
+    build: consumer
     ports:
       - "8081:80"
     depends_on:
-      - kafka
-    networks:
-      - kafka-net
-    restart: on-failure
+      kafka:
+        condition: service_healthy
+      postgis:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKER_ADDRESS=kafka:9092
+      - TOPIC=coordinates
+      - PG_USER=${POSTGRES_USER}
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - PG_DATABASE=noname-gps
+      - PG_HOST=postgis
+      - KAFKA_CONSUMER_GROUP=coordinates-consumer
 
   producer_1:
-    build:
-      context: ./producer
-      dockerfile: Dockerfile
-    # container_name: producer_1
+    build: producer
     ports:
       - "8082:80"
     depends_on:
-      - kafka
-    networks:
-      - kafka-net
-    restart: on-failure
+      kafka:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKER_ADDRESS=kafka:9092
+      - TOPIC=coordinates
 
   producer_2:
-    build:
-      context: ./producer
-      dockerfile: Dockerfile
-    container_name: producer_2
+    build: producer
     ports:
       - "8083:80"
     depends_on:
-      - kafka
-    networks:
-      - kafka-net
+      kafka:
+        condition: service_healthy
     restart: on-failure
+    environment:
+      - KAFKA_BROKER_ADDRESS=kafka:9092
+      - TOPIC=coordinates
 
-  fastapi:
-    build:
-      context: ./FastApi
-      dockerfile: Dockerfile
-    container_name: fastapi
+  backend:
+    build: backend
     depends_on:
-      - postgres
-      - postgis
+      postgis:
+        condition: service_healthy
     ports:
-      - "4000:8000"
-    networks:
-      - kafka-net
-    restart: on-failure
+      - "8000:8000"
     environment:
       - PG_USER=${POSTGRES_USER}
       - PG_PASSWORD=${POSTGRES_PASSWORD}
-      - PG_DATABASE=${POSTGRES_DB_NAME}
+      - PG_DATABASE=noname-gps
       - PG_HOST=postgis
   front:
-     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-     container_name: front
+     build: frontend
      depends_on:
-      - fastapi
+      - backend
      ports:
-      - "5173:5173"
-     networks:
-      - kafka-net
-     restart: on-failure
+      - "3000:3000"
+     environment:
+      - PUBLIC_BACKEND_ADDRESS=http://localhost:8000
+
 
 volumes:
-  zookeeper_data:
-    driver: local
   kafka_data:
-    driver: local
-
-networks:
-  kafka-net:
-    driver: bridge

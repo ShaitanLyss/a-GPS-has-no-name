@@ -1,0 +1,9 @@
+README.md
+Dockerfile
+.dockerignore
+.gitignore
+**/build
+**/dist
+**/node_modules
+**/$houdini
+**/.svelte-kit

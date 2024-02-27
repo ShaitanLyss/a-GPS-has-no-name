@@ -1,15 +1,36 @@
-FROM  node:alpine
+# Stage 1: Build the app
+FROM node:21-bookworm-slim AS builder
 
 WORKDIR /app
 
-COPY ./app .
+# Copy package.json and package-lock.json
+COPY app/package*.json ./
 
-RUN npm install --force
+# Install dependencies using pnpm
+RUN npm install -g pnpm
+RUN pnpm install
 
+# Copy the rest of the app's source code
+COPY app/. .
 
+# Build the app
+RUN pnpm build
 
-EXPOSE 5173
+# Stage 2: Create the production image
+FROM node:21-bookworm-slim
 
-CMD ["npm", "run", "dev"]
+WORKDIR /app
 
+# Copy the built app from the previous stage
+COPY --from=builder /app/build /app/package*.json ./
+
+# Install only production dependencies using pnpm
+RUN npm install -g pnpm
+RUN pnpm install --prod
+
+# Expose the port
+EXPOSE 3000
+
+# Start the app
+CMD ["node", "."]
 

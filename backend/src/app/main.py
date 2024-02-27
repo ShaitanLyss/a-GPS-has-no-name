@@ -86,16 +86,20 @@ class Subscription:
 
 
 
+
 schema = strawberry.Schema(query=Query, subscription=Subscription)
 
 graphql_app = GraphQLRouter(schema)
 
 app = FastAPI()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+app.include_router(graphql_app, prefix="/graphql")
+
 
 origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
     "http://localhost:5173",
     "http://localhost:8080",
     "http://localhost:3000"
@@ -108,4 +112,4 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(graphql_app, prefix="/graphql")
+
